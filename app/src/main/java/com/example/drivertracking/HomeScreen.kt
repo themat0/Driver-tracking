@@ -1,6 +1,7 @@
 package com.example.drivertracking
 
 import androidx.annotation.StringRes
+import com.example.drivertracking.ui.CameraPreview
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,12 +72,9 @@ fun DriverAppBar(
 
 @Composable
 fun DriverApp(
-    //viewModel: OrderViewModel = viewModel(),
     navController: NavHostController = rememberNavController()
 ) {
-    // Get current back stack entry
     val backStackEntry by navController.currentBackStackEntryAsState()
-    // Get the name of the current screen
     val currentScreen = DriverScreen.valueOf(
         backStackEntry?.destination?.route ?: DriverScreen.Start.name
     )
@@ -89,16 +87,13 @@ fun DriverApp(
                 navigateUp = { navController.navigateUp() }
             )
         },
-
-        ) { innerPadding ->
+    ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = DriverScreen.Start.name,
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(innerPadding)
-
         ) {
             composable(route = DriverScreen.Start.name) {
                 Column(
@@ -131,8 +126,7 @@ fun DriverApp(
                 Text(text = "Settings")
             }
             composable(route = DriverScreen.Camera.name) {
-                Text(text = "Camera-test michał")
-
+                CameraPreview()
             }
             composable(route = DriverScreen.Logs.name) {
                 Text(text = "Logs")
@@ -140,6 +134,4 @@ fun DriverApp(
             }
         }
     }
-
 }
-
