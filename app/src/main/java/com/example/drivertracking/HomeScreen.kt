@@ -131,7 +131,7 @@ fun DriverApp(
                 Text(text = "Settings")
             }
             composable(route = DriverScreen.Camera.name) {
-                Text(text = "Camera")
+                Text(text = "Camera-test michał")
 
             }
             composable(route = DriverScreen.Logs.name) {
