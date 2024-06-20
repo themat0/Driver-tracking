@@ -7,10 +7,11 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -18,9 +19,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.rememberPermissionState
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -30,18 +31,30 @@ fun CameraPreview() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+    var useFrontCamera by remember { mutableStateOf(true) }
 
     // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
-        cameraPermissionState = cameraPermissionState
+        cameraPermissionState = cameraPermissionState,
+        useFrontCamera = useFrontCamera
     )
 
     // Request Camera Permission if not granted
     LaunchedEffect(Unit) {
         if (cameraPermissionState.status != PermissionStatus.Granted) {
             cameraPermissionState.launchPermissionRequest()
+        }
+    }
+
+    // Switch Button
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter
+    ) {
+        Button(onClick = { useFrontCamera = !useFrontCamera }) {
+            Text(text = "Switch Camera")
         }
     }
 }
@@ -51,7 +64,8 @@ fun CameraPreview() {
 fun CameraPreviewContent(
     context: Context,
     lifecycleOwner: LifecycleOwner,
-    cameraPermissionState: PermissionState
+    cameraPermissionState: PermissionState,
+    useFrontCamera: Boolean
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
@@ -63,13 +77,17 @@ fun CameraPreviewContent(
     }
 
     if (cameraPermissionState.status == PermissionStatus.Granted) {
-        LaunchedEffect(cameraProviderFuture) {
+        LaunchedEffect(cameraProviderFuture, useFrontCamera) {
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(previewView.surfaceProvider)
             }
 
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            val cameraSelector = if (useFrontCamera) {
+                CameraSelector.DEFAULT_FRONT_CAMERA
+            } else {
+                CameraSelector.DEFAULT_BACK_CAMERA
+            }
 
             try {
                 cameraProvider.unbindAll()
