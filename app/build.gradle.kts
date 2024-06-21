@@ -48,20 +48,20 @@ android {
 
 dependencies {
     // michal approach MLkit implementation
-    implementation("androidx.camera:camera-core:1.1.0")
-    implementation("androidx.camera:camera-camera2:1.1.0")
-    implementation("androidx.camera:camera-lifecycle:1.1.0")
-    implementation("androidx.camera:camera-view:1.1.0")
-    implementation("androidx.camera:camera-extensions:1.1.0")
-    implementation("com.google.mlkit:barcode-scanning:17.0.0") // Add ML Kit for barcode scanning
+    implementation("androidx.camera:camera-core:1.3.4")
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("androidx.camera:camera-extensions:1.3.4")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0") // Add ML Kit for barcode scanning
     implementation("com.google.accompanist:accompanist-permissions:0.30.0")
 
 
     // Face features
-    implementation("com.google.mlkit:face-detection:16.0.0")
+    implementation("com.google.mlkit:face-detection:16.1.6")
 
     // Text features
-    implementation("com.google.android.gms:play-services-mlkit-text-recognition:16.0.0")
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -71,9 +71,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
-    implementation("androidx.compose.ui:ui:1.0.0")
-    implementation("androidx.compose.material:material:1.0.0")
-    implementation("androidx.navigation:navigation-compose:2.4.0-alpha01")
+    implementation("androidx.compose.ui:ui:1.6.8")
+    implementation("androidx.compose.material:material:1.6.8")
+    implementation(libs.androidx.room.common)
+    implementation(libs.androidx.room.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
