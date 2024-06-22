@@ -2,6 +2,7 @@ package com.example.drivertracking
 
 import androidx.annotation.StringRes
 import com.example.drivertracking.ui.CameraPreview
+import com.example.drivertracking.ui.SettingsScreen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -122,8 +123,7 @@ fun DriverApp(
                 }
             }
             composable(route = DriverScreen.Settings.name) {
-                val context = LocalContext.current
-                Text(text = "Settings")
+                SettingsScreen()
             }
             composable(route = DriverScreen.Camera.name) {
                 CameraPreview()
