@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.util.Log
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -16,11 +18,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.face.Face
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -31,13 +38,17 @@ fun CameraPreview() {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     var useFrontCamera by remember { mutableStateOf(true) }
+    var eyeOpenProbability by remember { mutableStateOf<Float?>(null) }
 
     // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
         cameraPermissionState = cameraPermissionState,
-        useFrontCamera = useFrontCamera
+        useFrontCamera = useFrontCamera,
+        onFaceDetected = { face ->
+            eyeOpenProbability = face.leftEyeOpenProbability
+        }
     )
 
     // Request Camera Permission if not granted
@@ -52,8 +63,13 @@ fun CameraPreview() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Button(onClick = { useFrontCamera = !useFrontCamera }) {
-            Text(text = "Switch Camera")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(onClick = { useFrontCamera = !useFrontCamera }) {
+                Text(text = "Switch Camera")
+            }
+            eyeOpenProbability?.let { probability ->
+                Text(text = "Left Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
+            }
         }
     }
 }
@@ -64,7 +80,8 @@ fun CameraPreviewContent(
     context: Context,
     lifecycleOwner: LifecycleOwner,
     cameraPermissionState: PermissionState,
-    useFrontCamera: Boolean
+    useFrontCamera: Boolean,
+    onFaceDetected: (Face) -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
@@ -88,12 +105,29 @@ fun CameraPreviewContent(
                 CameraSelector.DEFAULT_BACK_CAMERA
             }
 
+            val faceDetectorOptions = FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                .build()
+
+            val faceDetector = FaceDetection.getClient(faceDetectorOptions)
+
+            val imageAnalyzer = ImageAnalysis.Builder()
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor!!) { imageProxy ->
+                        processImageProxy(faceDetector, imageProxy, onFaceDetected)
+                    }
+                }
+
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     cameraSelector,
-                    preview
+                    preview,
+                    imageAnalyzer
                 )
             } catch (exc: Exception) {
                 Log.e("CameraPreview", "Use case binding failed", exc)
@@ -103,8 +137,33 @@ fun CameraPreviewContent(
         AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
     } else {
         // Show some UI to indicate the camera permission is not granted
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Camera permission is required to use this feature")
         }
+    }
+}
+
+private fun processImageProxy(
+    faceDetector: com.google.mlkit.vision.face.FaceDetector,
+    imageProxy: ImageProxy,
+    onFaceDetected: (Face) -> Unit
+) {
+    @androidx.camera.core.ExperimentalGetImage
+    val mediaImage = imageProxy.image
+    if (mediaImage != null) {
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        faceDetector.process(image)
+            .addOnSuccessListener { faces ->
+                if (faces.isNotEmpty()) {
+                    onFaceDetected(faces[0])
+                }
+                imageProxy.close()
+            }
+            .addOnFailureListener { e ->
+                Log.e("CameraPreview", "Face detection failed", e)
+                imageProxy.close()
+            }
+    } else {
+        imageProxy.close()
     }
 }
