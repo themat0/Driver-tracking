@@ -38,13 +38,19 @@ fun CameraPreview() {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
     var useFrontCamera by remember { mutableStateOf(true) }
+    var frameRate by remember { mutableStateOf(0) }
+    var imageSize by remember { mutableStateOf("") }
 
     // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
         cameraPermissionState = cameraPermissionState,
-        useFrontCamera = useFrontCamera
+        useFrontCamera = useFrontCamera,
+        frameRate = frameRate,
+        onFrameRateUpdated = { frameRate = it },
+        imageSize = imageSize,
+        onImageSizeUpdated = { imageSize = it }
     )
 
     // Request Camera Permission if not granted
@@ -59,11 +65,16 @@ fun CameraPreview() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Button(onClick = { useFrontCamera = !useFrontCamera }) {
-            Text(text = "Switch Camera")
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Button(onClick = { useFrontCamera = !useFrontCamera }) {
+                Text(text = "Switch Camera")
+            }
+            Text(text = "Frame Rate: $frameRate fps")
+            Text(text = "Image Size: $imageSize")
         }
     }
 }
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -71,7 +82,11 @@ fun CameraPreviewContent(
     context: Context,
     lifecycleOwner: LifecycleOwner,
     cameraPermissionState: PermissionState,
-    useFrontCamera: Boolean
+    useFrontCamera: Boolean,
+    frameRate: Int,
+    onFrameRateUpdated: (Int) -> Unit,
+    imageSize: String,
+    onImageSizeUpdated: (String) -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
@@ -108,7 +123,13 @@ fun CameraPreviewContent(
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor!!) { imageProxy ->
-                        processImageProxy(faceDetector, imageProxy, faceGridView)
+                        processImageProxy(
+                            faceDetector,
+                            imageProxy,
+                            faceGridView,
+                            onFrameRateUpdated,
+                            onImageSizeUpdated
+                        )
                     }
                 }
 
@@ -137,10 +158,13 @@ fun CameraPreviewContent(
     }
 }
 
+
 private fun processImageProxy(
     faceDetector: com.google.mlkit.vision.face.FaceDetector,
     imageProxy: ImageProxy,
-    faceGridView: FaceGridView
+    faceGridView: FaceGridView,
+    onFrameRateUpdated: (Int) -> Unit,
+    onImageSizeUpdated: (String) -> Unit
 ) {
     @androidx.camera.core.ExperimentalGetImage
     val mediaImage = imageProxy.image
@@ -153,6 +177,14 @@ private fun processImageProxy(
                 } else {
                     faceGridView.setFace(null)
                 }
+
+                // Update image size
+                val imageSize = "${mediaImage.width}x${mediaImage.height}"
+                onImageSizeUpdated(imageSize)
+
+                // Update frame rate
+                updateFrameRate(onFrameRateUpdated)
+
                 imageProxy.close()
             }
             .addOnFailureListener { e ->
@@ -161,5 +193,20 @@ private fun processImageProxy(
             }
     } else {
         imageProxy.close()
+    }
+}
+
+private var lastFrameTime = 0L
+private var frameCount = 0
+
+private fun updateFrameRate(onFrameRateUpdated: (Int) -> Unit) {
+    val currentTime = System.currentTimeMillis()
+    frameCount++
+
+    if (currentTime - lastFrameTime >= 1000) {
+        val frameRate = frameCount
+        frameCount = 0
+        lastFrameTime = currentTime
+        onFrameRateUpdated(frameRate)
     }
 }
