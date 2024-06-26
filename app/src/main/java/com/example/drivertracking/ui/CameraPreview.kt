@@ -40,6 +40,8 @@ fun CameraPreview() {
     var useFrontCamera by remember { mutableStateOf(true) }
     var frameRate by remember { mutableStateOf(0) }
     var imageSize by remember { mutableStateOf("") }
+    var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
+    var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
 
     // Handle Camera Preview
     CameraPreviewContent(
@@ -50,7 +52,11 @@ fun CameraPreview() {
         frameRate = frameRate,
         onFrameRateUpdated = { frameRate = it },
         imageSize = imageSize,
-        onImageSizeUpdated = { imageSize = it }
+        onImageSizeUpdated = { imageSize = it },
+        leftEyeOpenProbability = leftEyeOpenProbability,
+        onLeftEyeOpenProbabilityUpdated = { leftEyeOpenProbability = it },
+        rightEyeOpenProbability = rightEyeOpenProbability,
+        onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it }
     )
 
     // Request Camera Permission if not granted
@@ -71,6 +77,12 @@ fun CameraPreview() {
             }
             Text(text = "Frame Rate: $frameRate fps")
             Text(text = "Image Size: $imageSize")
+            leftEyeOpenProbability?.let { probability ->
+                Text(text = "Left Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
+            }
+            rightEyeOpenProbability?.let { probability ->
+                Text(text = "Right Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
+            }
         }
     }
 }
@@ -86,7 +98,11 @@ fun CameraPreviewContent(
     frameRate: Int,
     onFrameRateUpdated: (Int) -> Unit,
     imageSize: String,
-    onImageSizeUpdated: (String) -> Unit
+    onImageSizeUpdated: (String) -> Unit,
+    leftEyeOpenProbability: Float?,
+    onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    rightEyeOpenProbability: Float?,
+    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
@@ -128,7 +144,9 @@ fun CameraPreviewContent(
                             imageProxy,
                             faceGridView,
                             onFrameRateUpdated,
-                            onImageSizeUpdated
+                            onImageSizeUpdated,
+                            onLeftEyeOpenProbabilityUpdated,
+                            onRightEyeOpenProbabilityUpdated
                         )
                     }
                 }
@@ -164,7 +182,9 @@ private fun processImageProxy(
     imageProxy: ImageProxy,
     faceGridView: FaceGridView,
     onFrameRateUpdated: (Int) -> Unit,
-    onImageSizeUpdated: (String) -> Unit
+    onImageSizeUpdated: (String) -> Unit,
+    onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit
 ) {
     @androidx.camera.core.ExperimentalGetImage
     val mediaImage = imageProxy.image
@@ -173,9 +193,16 @@ private fun processImageProxy(
         faceDetector.process(image)
             .addOnSuccessListener { faces ->
                 if (faces.isNotEmpty()) {
-                    faceGridView.setFace(faces[0])
+                    val face = faces[0]
+                    faceGridView.setFace(face)
+
+                    // Update eye open probabilities
+                    onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
+                    onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
                 } else {
                     faceGridView.setFace(null)
+                    onLeftEyeOpenProbabilityUpdated(null)
+                    onRightEyeOpenProbabilityUpdated(null)
                 }
 
                 // Update image size
