@@ -2,11 +2,9 @@ package com.example.drivertracking.ui
 
 import android.Manifest
 import android.content.Context
+import android.graphics.Rect
 import android.util.Log
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
@@ -85,6 +83,7 @@ fun CameraPreviewContent(
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
+    val faceGridView = remember { FaceGridView(context) }
     var cameraExecutor: ExecutorService? by remember { mutableStateOf(null) }
 
     DisposableEffect(Unit) {
@@ -117,7 +116,7 @@ fun CameraPreviewContent(
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor!!) { imageProxy ->
-                        processImageProxy(faceDetector, imageProxy, onFaceDetected)
+                        processImageProxy(faceDetector, imageProxy, onFaceDetected, faceGridView)
                     }
                 }
 
@@ -134,7 +133,10 @@ fun CameraPreviewContent(
             }
         }
 
-        AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
+            AndroidView({ faceGridView }, modifier = Modifier.fillMaxSize())
+        }
     } else {
         // Show some UI to indicate the camera permission is not granted
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -146,7 +148,8 @@ fun CameraPreviewContent(
 private fun processImageProxy(
     faceDetector: com.google.mlkit.vision.face.FaceDetector,
     imageProxy: ImageProxy,
-    onFaceDetected: (Face) -> Unit
+    onFaceDetected: (Face) -> Unit,
+    faceGridView: FaceGridView
 ) {
     @androidx.camera.core.ExperimentalGetImage
     val mediaImage = imageProxy.image
@@ -156,6 +159,9 @@ private fun processImageProxy(
             .addOnSuccessListener { faces ->
                 if (faces.isNotEmpty()) {
                     onFaceDetected(faces[0])
+                    faceGridView.setFaceBoundingBox(faces[0].boundingBox)
+                } else {
+                    faceGridView.setFaceBoundingBox(null)
                 }
                 imageProxy.close()
             }
