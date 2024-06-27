@@ -1,5 +1,3 @@
-package com.example.drivertracking.ui
-
 import android.Manifest
 import android.content.Context
 import android.util.Log
@@ -30,7 +28,6 @@ import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraPreview() {
@@ -42,8 +39,8 @@ fun CameraPreview() {
     var imageSize by remember { mutableStateOf("") }
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
+    var drawMesh by remember { mutableStateOf(true) }
 
-    // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
@@ -56,17 +53,17 @@ fun CameraPreview() {
         leftEyeOpenProbability = leftEyeOpenProbability,
         onLeftEyeOpenProbabilityUpdated = { leftEyeOpenProbability = it },
         rightEyeOpenProbability = rightEyeOpenProbability,
-        onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it }
+        onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it },
+        drawMesh = drawMesh,
+        onDrawMeshUpdated = { drawMesh = it }
     )
 
-    // Request Camera Permission if not granted
     LaunchedEffect(Unit) {
         if (cameraPermissionState.status != PermissionStatus.Granted) {
             cameraPermissionState.launchPermissionRequest()
         }
     }
 
-    // Switch Button
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -74,6 +71,9 @@ fun CameraPreview() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Button(onClick = { useFrontCamera = !useFrontCamera }) {
                 Text(text = "Switch Camera")
+            }
+            Button(onClick = { drawMesh = !drawMesh }) {
+                Text(text = if (drawMesh) "Hide Mesh" else "Show Mesh")
             }
             Text(text = "Frame Rate: $frameRate fps")
             Text(text = "Image Size: $imageSize")
@@ -86,7 +86,6 @@ fun CameraPreview() {
         }
     }
 }
-
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -102,12 +101,15 @@ fun CameraPreviewContent(
     leftEyeOpenProbability: Float?,
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
     rightEyeOpenProbability: Float?,
-    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit
+    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    drawMesh: Boolean,
+    onDrawMeshUpdated: (Boolean) -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
     val faceGridView = remember { FaceGridView(context) }
-    var cameraExecutor: ExecutorService? by remember { mutableStateOf(null) }
+    faceGridView.setDrawMesh(drawMesh)
+    var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
 
     DisposableEffect(Unit) {
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -169,7 +171,6 @@ fun CameraPreviewContent(
             AndroidView({ faceGridView }, modifier = Modifier.fillMaxSize())
         }
     } else {
-        // Show some UI to indicate the camera permission is not granted
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Camera permission is required to use this feature")
         }
@@ -196,7 +197,6 @@ private fun processImageProxy(
                     val face = faces[0]
                     faceGridView.setFace(face)
 
-                    // Update eye open probabilities
                     onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
                     onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
                 } else {
@@ -205,11 +205,9 @@ private fun processImageProxy(
                     onRightEyeOpenProbabilityUpdated(null)
                 }
 
-                // Update image size
                 val imageSize = "${mediaImage.width}x${mediaImage.height}"
                 onImageSizeUpdated(imageSize)
 
-                // Update frame rate
                 updateFrameRate(onFrameRateUpdated)
 
                 imageProxy.close()
