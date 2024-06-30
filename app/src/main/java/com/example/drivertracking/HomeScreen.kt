@@ -3,6 +3,7 @@ package com.example.drivertracking
 import androidx.annotation.StringRes
 import com.example.drivertracking.ui.CameraPreview
 import com.example.drivertracking.ui.SettingsScreen
+import com.example.drivertracking.ui.LogsScreen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -129,8 +130,9 @@ fun DriverApp(
                 CameraPreview()
             }
             composable(route = DriverScreen.Logs.name) {
-                Text(text = "Logs")
-                val context = LocalContext.current
+                LogsScreen()
+//                Text(text = "Logs")
+//                val context = LocalContext.current
             }
         }
     }

@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             DriverTrackingTheme {
-                MainScreen()
+                DriverApp()
             }
         }
     }
@@ -50,7 +50,7 @@ fun MainScreen() {
                     val rightEyeOpenProbability = 0.9f // Replace with actual data
                     viewModel.insert(EyeOpennessRecord(timestamp = timestamp, leftEyeOpenProbability = leftEyeOpenProbability, rightEyeOpenProbability = rightEyeOpenProbability))
                 }) {
-                    Text("Add Eye Openness Record")
+                    Text("Add Record")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
