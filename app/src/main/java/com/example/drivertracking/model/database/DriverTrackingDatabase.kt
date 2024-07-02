@@ -1,11 +1,11 @@
-package com.example.drivertracking.room
+package com.example.drivertracking.model
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.drivertracking.room.dao.EyeOpennessDao
-import com.example.drivertracking.room.entities.EyeOpennessRecord
+import com.example.drivertracking.model.dao.EyeOpennessDao
+import com.example.drivertracking.model.entities.EyeOpennessRecord
 
 @Database(entities = [EyeOpennessRecord::class], version = 1, exportSchema = false)
 abstract class DriverTrackingDatabase : RoomDatabase() {

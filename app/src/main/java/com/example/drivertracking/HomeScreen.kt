@@ -2,14 +2,12 @@ package com.example.drivertracking
 
 import androidx.annotation.StringRes
 import CameraPreview
-import com.example.drivertracking.ui.SettingsScreen
-import com.example.drivertracking.ui.LogsScreen
+import com.example.drivertracking.features.settings.view.SettingsScreen
+import com.example.drivertracking.features.logs.view.LogsScreen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.icons.Icons
@@ -26,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost

@@ -1,4 +1,4 @@
-package com.example.drivertracking
+package com.example.drivertracking.features.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

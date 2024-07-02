@@ -1,7 +1,7 @@
 package com.example.drivertracking
 
 import android.app.Application
-import com.example.drivertracking.room.DriverTrackingDatabase
+import com.example.drivertracking.model.DriverTrackingDatabase
 
 class DriverTrackingApplication : Application() {
     companion object {

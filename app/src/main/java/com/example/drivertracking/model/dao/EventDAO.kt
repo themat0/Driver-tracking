@@ -1,4 +1,4 @@
-package com.example.drivertracking.room.DAO
+package com.example.drivertracking.model.DAO
 
 import Event
 import androidx.lifecycle.LiveData

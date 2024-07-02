@@ -1,4 +1,4 @@
-package com.example.drivertracking.ui
+package com.example.drivertracking.features.settings.view
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.drivertracking.SettingsViewModel
+import com.example.drivertracking.features.settings.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {

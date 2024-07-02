@@ -10,8 +10,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.drivertracking.ui.EyeOpennessViewModel
-import com.example.drivertracking.room.entities.EyeOpennessRecord
+import com.example.drivertracking.features.camera.viewmodel.CameraViewModel
+import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.example.drivertracking.ui.theme.DriverTrackingTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-    val viewModel: EyeOpennessViewModel = viewModel()
+    val viewModel: CameraViewModel = viewModel()
     val records by viewModel.allRecords.observeAsState(emptyList())
 
     Scaffold(

@@ -7,35 +7,41 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Button
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.example.drivertracking.room.entities.EyeOpennessRecord
-import com.example.drivertracking.ui.theme.DriverTrackingTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.drivertracking.features.camera.viewmodel.CameraViewModel
+import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.common.InputImage
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.drivertracking.ui.EyeOpennessViewModel
-import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
+import kotlinx.coroutines.delay
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
+fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
@@ -46,13 +52,32 @@ fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
 
     // Function to save current eye openness data to database
-    val onSaveToDatabase: () -> Unit = {
-        // Save to database when button is clicked
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
+                viewModel.insert(
+                    EyeOpennessRecord(
+                        timestamp = System.currentTimeMillis(),
+                        leftEyeOpenProbability = leftEyeOpenProbability!!,
+                        rightEyeOpenProbability = rightEyeOpenProbability!!
+                    )
+                )
+            }
+            delay(1000) // Save data every 1 second
+        }
+    }
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.deleteOldRecords()
+            delay(1000 * 60 * 10) // Delete old records every 10 minutes
+        }
+    }
+    // Save to database when button is clicked
+    val onSaveToDatabase = {
         if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
-            val timestamp = System.currentTimeMillis()
             viewModel.insert(
                 EyeOpennessRecord(
-                    timestamp = timestamp,
+                    timestamp = System.currentTimeMillis(),
                     leftEyeOpenProbability = leftEyeOpenProbability!!,
                     rightEyeOpenProbability = rightEyeOpenProbability!!
                 )
@@ -60,7 +85,7 @@ fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
         }
     }
 
-    // Handle Camera Preview
+// Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
@@ -77,14 +102,14 @@ fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
         onSaveToDatabase = onSaveToDatabase
     )
 
-    // Request Camera Permission if not granted
+// Request Camera Permission if not granted
     LaunchedEffect(Unit) {
         if (cameraPermissionState.status != PermissionStatus.Granted) {
             cameraPermissionState.launchPermissionRequest()
         }
     }
 
-    // Switch Button
+// Switch Button
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -96,16 +121,28 @@ fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
             Text(text = "Frame Rate: $frameRate fps")
             Text(text = "Image Size: $imageSize")
             leftEyeOpenProbability?.let { probability ->
-                Text(text = "Left Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
+                Text(
+                    text = "Left Eye Open Probability: ${
+                        String.format(
+                            "%.2f",
+                            probability * 100
+                        )
+                    }%"
+                )
             }
             rightEyeOpenProbability?.let { probability ->
-                Text(text = "Right Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
-            }
-            Button(onClick = { onSaveToDatabase() }) {
-                Text("Save to Database")
+                Text(
+                    text = "Right Eye Open Probability: ${
+                        String.format(
+                            "%.2f",
+                            probability * 100
+                        )
+                    }%"
+                )
             }
         }
     }
+
 }
 
 

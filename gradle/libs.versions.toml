@@ -13,6 +13,7 @@ navigationComposeVersion = "2.4.0-alpha01"
 roomCommon = "2.6.1"
 roomKtx = "2.6.1"
 runtimeLivedata = "1.6.8"
+databindingCommon = "8.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +35,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-runtime-livedata = { group = "androidx.compose.runtime", name = "runtime-livedata", version.ref = "runtimeLivedata" }
 androidx-room-common = { group = "androidx.room", name = "room-common", version.ref = "roomCommon" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
+androidx-databinding-common = { group = "androidx.databinding", name = "databinding-common", version.ref = "databindingCommon" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
