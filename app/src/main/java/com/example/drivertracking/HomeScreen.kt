@@ -1,7 +1,7 @@
 package com.example.drivertracking
 
 import androidx.annotation.StringRes
-import com.example.drivertracking.ui.CameraPreview
+import CameraPreview
 import com.example.drivertracking.ui.SettingsScreen
 import com.example.drivertracking.ui.LogsScreen
 import androidx.compose.foundation.layout.Arrangement

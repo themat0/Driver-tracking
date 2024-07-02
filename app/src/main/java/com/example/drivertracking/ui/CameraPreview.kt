@@ -1,5 +1,3 @@
-package com.example.drivertracking.ui
-
 import android.Manifest
 import android.content.Context
 import android.util.Log
@@ -109,6 +107,7 @@ fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
     }
 }
 
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraPreviewContent(
@@ -191,7 +190,6 @@ fun CameraPreviewContent(
             AndroidView({ faceGridView }, modifier = Modifier.fillMaxSize())
         }
     } else {
-        // Show some UI to indicate the camera permission is not granted
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Camera permission is required to use this feature")
         }
@@ -217,7 +215,6 @@ private fun processImageProxy(
                     val face = faces[0]
                     faceGridView.setFace(face)
 
-                    // Update eye open probabilities
                     onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
                     onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
                 } else {
@@ -226,11 +223,9 @@ private fun processImageProxy(
                     onRightEyeOpenProbabilityUpdated(null)
                 }
 
-                // Update image size
                 val imageSize = "${mediaImage.width}x${mediaImage.height}"
                 onImageSizeUpdated(imageSize)
 
-                // Update frame rate
                 updateFrameRate(onFrameRateUpdated)
 
                 imageProxy.close()
