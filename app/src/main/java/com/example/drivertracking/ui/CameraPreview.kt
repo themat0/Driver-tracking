@@ -18,19 +18,24 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.example.drivertracking.room.entities.EyeOpennessRecord
+import com.example.drivertracking.ui.theme.DriverTrackingTheme
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.common.InputImage
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.drivertracking.ui.EyeOpennessViewModel
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraPreview() {
+fun CameraPreview(viewModel: EyeOpennessViewModel = viewModel()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
@@ -39,8 +44,23 @@ fun CameraPreview() {
     var imageSize by remember { mutableStateOf("") }
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
-    var drawMesh by remember { mutableStateOf(true) }
 
+    // Function to save current eye openness data to database
+    val onSaveToDatabase: () -> Unit = {
+        // Save to database when button is clicked
+        if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
+            val timestamp = System.currentTimeMillis()
+            viewModel.insert(
+                EyeOpennessRecord(
+                    timestamp = timestamp,
+                    leftEyeOpenProbability = leftEyeOpenProbability!!,
+                    rightEyeOpenProbability = rightEyeOpenProbability!!
+                )
+            )
+        }
+    }
+
+    // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
@@ -54,16 +74,17 @@ fun CameraPreview() {
         onLeftEyeOpenProbabilityUpdated = { leftEyeOpenProbability = it },
         rightEyeOpenProbability = rightEyeOpenProbability,
         onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it },
-        drawMesh = drawMesh,
-        onDrawMeshUpdated = { drawMesh = it }
+        onSaveToDatabase = onSaveToDatabase
     )
 
+    // Request Camera Permission if not granted
     LaunchedEffect(Unit) {
         if (cameraPermissionState.status != PermissionStatus.Granted) {
             cameraPermissionState.launchPermissionRequest()
         }
     }
 
+    // Switch Button
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -71,9 +92,6 @@ fun CameraPreview() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Button(onClick = { useFrontCamera = !useFrontCamera }) {
                 Text(text = "Switch Camera")
-            }
-            Button(onClick = { drawMesh = !drawMesh }) {
-                Text(text = if (drawMesh) "Hide Mesh" else "Show Mesh")
             }
             Text(text = "Frame Rate: $frameRate fps")
             Text(text = "Image Size: $imageSize")
@@ -83,9 +101,13 @@ fun CameraPreview() {
             rightEyeOpenProbability?.let { probability ->
                 Text(text = "Right Eye Open Probability: ${String.format("%.2f", probability * 100)}%")
             }
+            Button(onClick = { onSaveToDatabase() }) {
+                Text("Save to Database")
+            }
         }
     }
 }
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -102,14 +124,12 @@ fun CameraPreviewContent(
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
     rightEyeOpenProbability: Float?,
     onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
-    drawMesh: Boolean,
-    onDrawMeshUpdated: (Boolean) -> Unit
+    onSaveToDatabase: () -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
     val faceGridView = remember { FaceGridView(context) }
-    faceGridView.setDrawMesh(drawMesh)
-    var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
+    var cameraExecutor: ExecutorService? by remember { mutableStateOf(null) }
 
     DisposableEffect(Unit) {
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -176,7 +196,6 @@ fun CameraPreviewContent(
         }
     }
 }
-
 
 private fun processImageProxy(
     faceDetector: com.google.mlkit.vision.face.FaceDetector,
