@@ -26,6 +26,7 @@ import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.mlkit.vision.common.InputImage
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.drivertracking.ui.EyeOpennessViewModel
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
