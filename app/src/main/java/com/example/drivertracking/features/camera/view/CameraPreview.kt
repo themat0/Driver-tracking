@@ -51,21 +51,6 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
 
-    // Function to save current eye openness data to database
-    LaunchedEffect(Unit) {
-        while (true) {
-            if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
-                viewModel.insert(
-                    EyeOpennessRecord(
-                        timestamp = System.currentTimeMillis(),
-                        leftEyeOpenProbability = leftEyeOpenProbability!!,
-                        rightEyeOpenProbability = rightEyeOpenProbability!!
-                    )
-                )
-            }
-            delay(1000) // Save data every 1 second
-        }
-    }
     LaunchedEffect(Unit) {
         while (true) {
             viewModel.deleteOldRecords()
@@ -99,7 +84,7 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
         onLeftEyeOpenProbabilityUpdated = { leftEyeOpenProbability = it },
         rightEyeOpenProbability = rightEyeOpenProbability,
         onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it },
-        onSaveToDatabase = onSaveToDatabase
+        onSaveToDatabase = onSaveToDatabase,
     )
 
 // Request Camera Permission if not granted
@@ -205,7 +190,8 @@ fun CameraPreviewContent(
                             onFrameRateUpdated,
                             onImageSizeUpdated,
                             onLeftEyeOpenProbabilityUpdated,
-                            onRightEyeOpenProbabilityUpdated
+                            onRightEyeOpenProbabilityUpdated,
+                            onSaveToDatabase,
                         )
                     }
                 }
@@ -241,7 +227,8 @@ private fun processImageProxy(
     onFrameRateUpdated: (Int) -> Unit,
     onImageSizeUpdated: (String) -> Unit,
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
-    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit
+    onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    onSaveToDatabase: () -> Unit
 ) {
     @androidx.camera.core.ExperimentalGetImage
     val mediaImage = imageProxy.image
@@ -255,6 +242,7 @@ private fun processImageProxy(
 
                     onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
                     onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
+                    onSaveToDatabase()
                 } else {
                     faceGridView.setFace(null)
                     onLeftEyeOpenProbabilityUpdated(null)

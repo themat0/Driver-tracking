@@ -43,16 +43,6 @@ fun MainScreen() {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Add Record Button for testing
-                Button(onClick = {
-                    val timestamp = System.currentTimeMillis()
-                    val leftEyeOpenProbability = 0.8f // Replace with actual data
-                    val rightEyeOpenProbability = 0.9f // Replace with actual data
-                    viewModel.insert(EyeOpennessRecord(timestamp = timestamp, leftEyeOpenProbability = leftEyeOpenProbability, rightEyeOpenProbability = rightEyeOpenProbability))
-                }) {
-                    Text("Add Record")
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Displaying the records from the database
