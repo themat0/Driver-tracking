@@ -17,4 +17,8 @@ interface EyeOpennessDao {
     //Delete old record from database
     @Query("DELETE FROM eye_openness_records WHERE timestamp < :timestamp")
     fun deleteOldRecords(timestamp: Long)
+
+    @Query("SELECT * FROM eye_openness_records WHERE timestamp BETWEEN :startTime AND :endTime ORDER BY timestamp DESC")
+    fun getRecordsBetweenTimestamps(startTime: Long, endTime: Long): List<EyeOpennessRecord>
+
 }

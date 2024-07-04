@@ -50,6 +50,8 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var imageSize by remember { mutableStateOf("") }
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
+    var medianLeftEye by remember { mutableStateOf<Float?>(null) }
+    var medianRightEye by remember { mutableStateOf<Float?>(null) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -57,6 +59,7 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
             delay(1000 * 60 * 10) // Delete old records every 10 minutes
         }
     }
+
     // Save to database when button is clicked
     val onSaveToDatabase = {
         if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
@@ -70,7 +73,21 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
         }
     }
 
-// Handle Camera Preview
+    // Calculate median from records in the last 5 minutes
+    val calculateMedian = {
+        viewModel.calculateMedianForLast5Minutes()
+    }
+
+    // Observe median values from ViewModel
+    viewModel.medianLeftEyeLiveData.observe(lifecycleOwner) { median ->
+        medianLeftEye = median
+    }
+
+    viewModel.medianRightEyeLiveData.observe(lifecycleOwner) { median ->
+        medianRightEye = median
+    }
+
+    // Handle Camera Preview
     CameraPreviewContent(
         context = context,
         lifecycleOwner = lifecycleOwner,
@@ -85,16 +102,17 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
         rightEyeOpenProbability = rightEyeOpenProbability,
         onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it },
         onSaveToDatabase = onSaveToDatabase,
+        calculateMedian = calculateMedian  // Pass the calculateMedian function
     )
 
-// Request Camera Permission if not granted
+    // Request Camera Permission if not granted
     LaunchedEffect(Unit) {
         if (cameraPermissionState.status != PermissionStatus.Granted) {
             cameraPermissionState.launchPermissionRequest()
         }
     }
 
-// Switch Button
+    // Switch Button and other UI elements
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.BottomCenter
@@ -102,6 +120,9 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Button(onClick = { useFrontCamera = !useFrontCamera }) {
                 Text(text = "Switch Camera")
+            }
+            Button(onClick = { calculateMedian() }) {
+                Text(text = "Calculate Median")
             }
             Text(text = "Frame Rate: $frameRate fps")
             Text(text = "Image Size: $imageSize")
@@ -125,9 +146,28 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
                     }%"
                 )
             }
+            medianLeftEye?.let { median ->
+                Text(
+                    text = "Median Left Eye Open Probability: ${
+                        String.format(
+                            "%.2f",
+                            median * 100
+                        )
+                    }%"
+                )
+            }
+            medianRightEye?.let { median ->
+                Text(
+                    text = "Median Right Eye Open Probability: ${
+                        String.format(
+                            "%.2f",
+                            median * 100
+                        )
+                    }%"
+                )
+            }
         }
     }
-
 }
 
 
@@ -146,7 +186,8 @@ fun CameraPreviewContent(
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
     rightEyeOpenProbability: Float?,
     onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
-    onSaveToDatabase: () -> Unit
+    onSaveToDatabase: () -> Unit,
+    calculateMedian: () -> Unit
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
