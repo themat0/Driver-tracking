@@ -52,6 +52,8 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var medianLeftEye by remember { mutableStateOf<Float?>(null) }
     var medianRightEye by remember { mutableStateOf<Float?>(null) }
+    var recordCount by remember { mutableStateOf<Int?>(null) }
+    var calculationTime by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -85,6 +87,14 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
 
     viewModel.medianRightEyeLiveData.observe(lifecycleOwner) { median ->
         medianRightEye = median
+    }
+
+    viewModel.recordCountLiveData.observe(lifecycleOwner) { count ->
+        recordCount = count
+    }
+
+    viewModel.calculationTimeLiveData.observe(lifecycleOwner) { time ->
+        calculationTime = time
     }
 
     // Handle Camera Preview
@@ -166,9 +176,16 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
                     }%"
                 )
             }
+            recordCount?.let { count ->
+                Text(text = "Records Count: $count")
+            }
+            calculationTime?.let { time ->
+                Text(text = "Calculation Time: $time ms")
+            }
         }
     }
 }
+
 
 
 @OptIn(ExperimentalPermissionsApi::class)

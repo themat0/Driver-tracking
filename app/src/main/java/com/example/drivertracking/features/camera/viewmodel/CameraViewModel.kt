@@ -11,6 +11,7 @@ import com.example.drivertracking.model.dao.EyeOpennessDao
 import com.example.drivertracking.model.entities.EyeOpennessRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.system.measureTimeMillis
 
 class CameraViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -22,6 +23,13 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val medianRightEyeLiveData: LiveData<Float>
         get() = _medianRightEyeLiveData
 
+    private val _recordCountLiveData = MutableLiveData<Int>()
+    val recordCountLiveData: LiveData<Int>
+        get() = _recordCountLiveData
+
+    private val _calculationTimeLiveData = MutableLiveData<Long>()
+    val calculationTimeLiveData: LiveData<Long>
+        get() = _calculationTimeLiveData
 
     private val eyeOpennessDao: EyeOpennessDao = DriverTrackingApplication.database.eyeOpennessDao()
     val allRecords: LiveData<List<EyeOpennessRecord>> = eyeOpennessDao.getAllRecords()
@@ -43,21 +51,29 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     fun calculateMedianForLast5Minutes() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val currentTime = System.currentTimeMillis()
-                val fiveMinutesAgo = currentTime - (5 * 60 * 1000)
-                val records = eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
+                val calculationTime = measureTimeMillis {
+                    val currentTime = System.currentTimeMillis()
+                    val fiveMinutesAgo = currentTime - (5 * 60 * 1000)
+                    val records = eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
 
-                val leftEyeProbabilities = records.mapNotNull { it.leftEyeOpenProbability }
-                    .sorted()
-                val rightEyeProbabilities = records.mapNotNull { it.rightEyeOpenProbability }
-                    .sorted()
+                    val leftEyeProbabilities = records.mapNotNull { it.leftEyeOpenProbability }
+                        .sorted()
+                    val rightEyeProbabilities = records.mapNotNull { it.rightEyeOpenProbability }
+                        .sorted()
 
-                val medianLeftEye = calculateMedian(leftEyeProbabilities)
-                val medianRightEye = calculateMedian(rightEyeProbabilities)
+                    val medianLeftEye = calculateMedian(leftEyeProbabilities)
+                    val medianRightEye = calculateMedian(rightEyeProbabilities)
 
-                // Update LiveData with the calculated median values
-                _medianLeftEyeLiveData.postValue(medianLeftEye)
-                _medianRightEyeLiveData.postValue(medianRightEye)
+                    // Update LiveData with the calculated median values
+                    _medianLeftEyeLiveData.postValue(medianLeftEye)
+                    _medianRightEyeLiveData.postValue(medianRightEye)
+
+                    // Update LiveData with the number of records
+                    _recordCountLiveData.postValue(records.size)
+                }
+
+                // Update LiveData with the time taken for the calculation
+                _calculationTimeLiveData.postValue(calculationTime)
 
             } catch (e: Exception) {
                 Log.e("CameraViewModel", "Error calculating median", e)
