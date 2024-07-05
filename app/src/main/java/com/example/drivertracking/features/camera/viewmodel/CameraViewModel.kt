@@ -8,7 +8,9 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.drivertracking.DriverTrackingApplication
 import com.example.drivertracking.model.dao.EyeOpennessDao
+import com.example.drivertracking.model.dao.StatsDao
 import com.example.drivertracking.model.entities.EyeOpennessRecord
+import com.example.drivertracking.model.entities.StatsRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.system.measureTimeMillis
@@ -32,6 +34,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         get() = _calculationTimeLiveData
 
     private val eyeOpennessDao: EyeOpennessDao = DriverTrackingApplication.database.eyeOpennessDao()
+    private val statsDao: StatsDao = DriverTrackingApplication.database.statsDao()
     val allRecords: LiveData<List<EyeOpennessRecord>> = eyeOpennessDao.getAllRecords()
 
     fun insert(record: EyeOpennessRecord) {
@@ -70,6 +73,16 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
                     // Update LiveData with the number of records
                     _recordCountLiveData.postValue(records.size)
+
+                    // Insert the stats into the database
+                    val stats = StatsRecord(
+                        timestamp = currentTime,
+                        medianLeftEye = medianLeftEye,
+                        medianRightEye = medianRightEye,
+                        recordCount = records.size,
+                        calculationTime = 123
+                    )
+                    statsDao.insert(stats)
                 }
 
                 // Update LiveData with the time taken for the calculation

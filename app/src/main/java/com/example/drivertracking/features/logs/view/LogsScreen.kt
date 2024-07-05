@@ -10,13 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.drivertracking.features.logs.viewmodel.LogsViewModel
-import com.example.drivertracking.model.entities.EyeOpennessRecord
-
+import com.example.drivertracking.model.entities.StatsRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogsScreen(viewModel: LogsViewModel = viewModel()) {
-    val records by viewModel.allRecords.observeAsState(emptyList())
+    val statsRecords by viewModel.allStatsRecords.observeAsState(emptyList())
 
     Scaffold(
         topBar = {
@@ -34,9 +33,9 @@ fun LogsScreen(viewModel: LogsViewModel = viewModel()) {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                items(records) { record ->
-                    // Display Records
-                    DisplayRecord(record)
+                items(statsRecords) { record ->
+                    // Display Stats Records
+                    DisplayStatsRecord(record)
                 }
             }
         }
@@ -45,7 +44,7 @@ fun LogsScreen(viewModel: LogsViewModel = viewModel()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DisplayRecord(record: EyeOpennessRecord) {
+private fun DisplayStatsRecord(record: StatsRecord) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -54,8 +53,11 @@ private fun DisplayRecord(record: EyeOpennessRecord) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Timestamp: ${record.timestamp}")
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Left Eye: ${record.leftEyeOpenProbability}")
-            Text("Right Eye: ${record.rightEyeOpenProbability}")
+            Text("Median Left Eye: ${record.medianLeftEye}")
+            Text("Median Right Eye: ${record.medianRightEye}")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Record Count: ${record.recordCount}")
+            Text("Calculation Time: ${record.calculationTime} ms")
         }
     }
 }
