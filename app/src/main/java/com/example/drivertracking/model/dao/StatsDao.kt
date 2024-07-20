@@ -16,4 +16,6 @@ interface StatsDao {
     fun getAllStatsRecords(): LiveData<List<StatsRecord>>
     @Query("SELECT * FROM stats ORDER BY timestamp DESC LIMIT 1")
     fun getLastStatsRecord(): StatsRecord?
+    @Query("SELECT * FROM stats ORDER BY timestamp DESC LIMIT 2")
+    fun getLastTwoStatsRecords(): List<StatsRecord>
 }

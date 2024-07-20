@@ -1,6 +1,8 @@
 import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -55,12 +57,28 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var recordCount by remember { mutableStateOf<Int?>(null) }
     var calculationTime by remember { mutableStateOf<Long?>(null) }
 
+    val toastLink = {
+        (context as Activity).runOnUiThread {
+            Toast.makeText(context, "Uwaga! Zdarzenie zarejestrowane", Toast.LENGTH_LONG).show()
+        }
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
             viewModel.deleteOldRecords()
             delay(1000 * 60 * 10) // Delete old records every 10 minutes
         }
     }
+    LaunchedEffect(Unit) {
+        while (true) {
+            viewModel.calculateMedianForLast5Minutes()
+            viewModel.checkMedianForNotification(toastLink)
+            delay(1000 * 60 * 1) // every 1 minutes
+        }
+    }
+
+
+
 
     // Save to database when button is clicked
     val onSaveToDatabase = {

@@ -64,6 +64,11 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                     val rightEyeProbabilities = records.mapNotNull { it.rightEyeOpenProbability }
                         .sorted()
 
+                    if(leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty()){
+                        Log.i("CameraViewModel", "No records found in the last 5 minutes")
+                        return@launch
+                    }
+
                     val medianLeftEye = calculateMedian(leftEyeProbabilities)
                     val medianRightEye = calculateMedian(rightEyeProbabilities)
 
@@ -92,6 +97,18 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 Log.e("CameraViewModel", "Error calculating median", e)
                 // Handle error as needed
             }
+        }
+    }
+
+    fun checkMedianForNotification(showNotification: () -> Unit){
+        viewModelScope.launch(Dispatchers.IO) {
+            statsDao.getLastTwoStatsRecords()
+                .takeIf { it.size == 2 }
+                ?.let { (newStats, oldStats) ->
+                    if (newStats.medianLeftEye < oldStats.medianLeftEye *0.9|| newStats.medianRightEye < oldStats.medianRightEye*0.9) {
+                        showNotification()
+                    }
+                }
         }
     }
 
