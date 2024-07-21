@@ -9,6 +9,7 @@ data class StatsRecord(
     val timestamp: Long,
     val medianLeftEye: Float,
     val medianRightEye: Float,
+    val headEulerAngleX: Float,
     val recordCount: Int,
     val calculationTime: Long
 )

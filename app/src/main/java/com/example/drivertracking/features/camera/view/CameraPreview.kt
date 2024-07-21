@@ -29,6 +29,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.drivertracking.features.camera.viewmodel.CameraViewModel
+import com.example.drivertracking.model.entities.EulerRecord
 import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionState
@@ -52,8 +53,10 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var imageSize by remember { mutableStateOf("") }
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
     var rightEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
+    var headEulerAngleX by remember { mutableStateOf<Float?>(null) }
     var medianLeftEye by remember { mutableStateOf<Float?>(null) }
     var medianRightEye by remember { mutableStateOf<Float?>(null) }
+    var medianHeadEulerAngleX by remember { mutableStateOf<Float?>(null) }
     var recordCount by remember { mutableStateOf<Int?>(null) }
     var calculationTime by remember { mutableStateOf<Long?>(null) }
 
@@ -82,12 +85,16 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
 
     // Save to database when button is clicked
     val onSaveToDatabase = {
-        if (leftEyeOpenProbability != null && rightEyeOpenProbability != null) {
+        if (leftEyeOpenProbability != null && rightEyeOpenProbability != null && headEulerAngleX != null) {
             viewModel.insert(
                 EyeOpennessRecord(
                     timestamp = System.currentTimeMillis(),
                     leftEyeOpenProbability = leftEyeOpenProbability!!,
-                    rightEyeOpenProbability = rightEyeOpenProbability!!
+                    rightEyeOpenProbability = rightEyeOpenProbability!!,
+                ),
+                EulerRecord(
+                    timestamp = System.currentTimeMillis(),
+                    headEulerAngleX = headEulerAngleX ?: 0f,
                 )
             )
         }
@@ -105,6 +112,10 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
 
     viewModel.medianRightEyeLiveData.observe(lifecycleOwner) { median ->
         medianRightEye = median
+    }
+
+    viewModel.medianEulerAngleXLiveData.observe(lifecycleOwner) { median ->
+        medianHeadEulerAngleX = median
     }
 
     viewModel.recordCountLiveData.observe(lifecycleOwner) { count ->
@@ -129,6 +140,7 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
         onLeftEyeOpenProbabilityUpdated = { leftEyeOpenProbability = it },
         rightEyeOpenProbability = rightEyeOpenProbability,
         onRightEyeOpenProbabilityUpdated = { rightEyeOpenProbability = it },
+        onHeadEulerAngleXUpdated = { headEulerAngleX = it },
         onSaveToDatabase = onSaveToDatabase,
         calculateMedian = calculateMedian  // Pass the calculateMedian function
     )
@@ -194,6 +206,9 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
                     }%"
                 )
             }
+            medianHeadEulerAngleX?.let { median ->
+                Text(text = "Median Head Euler Angle X: ${String.format("%.2f", median)}")
+            }
             recordCount?.let { count ->
                 Text(text = "Records Count: $count")
             }
@@ -221,6 +236,7 @@ fun CameraPreviewContent(
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
     rightEyeOpenProbability: Float?,
     onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    onHeadEulerAngleXUpdated: (Float?) -> Unit,
     onSaveToDatabase: () -> Unit,
     calculateMedian: () -> Unit
 ) {
@@ -267,6 +283,7 @@ fun CameraPreviewContent(
                             onImageSizeUpdated,
                             onLeftEyeOpenProbabilityUpdated,
                             onRightEyeOpenProbabilityUpdated,
+                            onHeadEulerAngleXUpdated,
                             onSaveToDatabase,
                         )
                     }
@@ -304,6 +321,7 @@ private fun processImageProxy(
     onImageSizeUpdated: (String) -> Unit,
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
     onRightEyeOpenProbabilityUpdated: (Float?) -> Unit,
+    onHeadEulerAngleXUpdated: (Float?) -> Unit,
     onSaveToDatabase: () -> Unit
 ) {
     @androidx.camera.core.ExperimentalGetImage
@@ -315,12 +333,13 @@ private fun processImageProxy(
                 if (faces.isNotEmpty()) {
                     val face = faces[0]
                     faceGridView.setFace(face)
-
+                    onHeadEulerAngleXUpdated(face.headEulerAngleX)
                     onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
                     onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
                     onSaveToDatabase()
                 } else {
                     faceGridView.setFace(null)
+                    onHeadEulerAngleXUpdated(null)
                     onLeftEyeOpenProbabilityUpdated(null)
                     onRightEyeOpenProbabilityUpdated(null)
                 }

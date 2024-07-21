@@ -6,14 +6,17 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.drivertracking.model.dao.EulerDao
 import com.example.drivertracking.model.dao.EyeOpennessDao
 import com.example.drivertracking.model.dao.StatsDao
+import com.example.drivertracking.model.entities.EulerRecord
 import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.example.drivertracking.model.entities.StatsRecord
 
-@Database(entities = [EyeOpennessRecord::class, StatsRecord::class], version = 2, exportSchema = false)
+@Database(entities = [EyeOpennessRecord::class, StatsRecord::class, EulerRecord::class], version = 2, exportSchema = false)
 abstract class DriverTrackingDatabase : RoomDatabase() {
     abstract fun eyeOpennessDao(): EyeOpennessDao
+    abstract  fun eulerDao(): EulerDao
     abstract fun statsDao(): StatsDao
 
     companion object {

@@ -7,8 +7,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.drivertracking.DriverTrackingApplication
+import com.example.drivertracking.model.dao.EulerDao
 import com.example.drivertracking.model.dao.EyeOpennessDao
 import com.example.drivertracking.model.dao.StatsDao
+import com.example.drivertracking.model.entities.EulerRecord
 import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.example.drivertracking.model.entities.StatsRecord
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +27,10 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     val medianRightEyeLiveData: LiveData<Float>
         get() = _medianRightEyeLiveData
 
+    private val _medianEulerAngleXLiveData = MutableLiveData<Float>()
+    val medianEulerAngleXLiveData: LiveData<Float>
+        get() = _medianEulerAngleXLiveData
+
     private val _recordCountLiveData = MutableLiveData<Int>()
     val recordCountLiveData: LiveData<Int>
         get() = _recordCountLiveData
@@ -34,13 +40,15 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         get() = _calculationTimeLiveData
 
     private val eyeOpennessDao: EyeOpennessDao = DriverTrackingApplication.database.eyeOpennessDao()
+    private val eulerDao: EulerDao = DriverTrackingApplication.database.eulerDao()
     private val statsDao: StatsDao = DriverTrackingApplication.database.statsDao()
     val allRecords: LiveData<List<EyeOpennessRecord>> = eyeOpennessDao.getAllRecords()
 
-    fun insert(record: EyeOpennessRecord) {
-        Log.i("CameraViewModel", "Inserting record: $record")
+    fun insert(eyeOpennessRecord: EyeOpennessRecord, eulerRecord: EulerRecord) {
+        Log.i("CameraViewModel", "Inserting record: $eyeOpennessRecord, $eulerRecord")
         viewModelScope.launch(Dispatchers.IO) {
-            eyeOpennessDao.insert(record)
+            eyeOpennessDao.insert(eyeOpennessRecord)
+            eulerDao.insert(eulerRecord)
         }
     }
 
@@ -48,6 +56,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         val timestamp = System.currentTimeMillis() - 1000 * 60 * 60 * 1 // 1 hour
         viewModelScope.launch(Dispatchers.IO) {
             eyeOpennessDao.deleteOldRecords(timestamp)
+            eulerDao.deleteOldRecords(timestamp)
         }
     }
 
@@ -57,34 +66,41 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                 val calculationTime = measureTimeMillis {
                     val currentTime = System.currentTimeMillis()
                     val fiveMinutesAgo = currentTime - (5 * 60 * 1000)
-                    val records = eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
+                    val eyeOpennessRecord = eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
+                    val eulerRecord = eulerDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
 
-                    val leftEyeProbabilities = records.mapNotNull { it.leftEyeOpenProbability }
+                    val leftEyeProbabilities = eyeOpennessRecord.mapNotNull { it.leftEyeOpenProbability }
                         .sorted()
-                    val rightEyeProbabilities = records.mapNotNull { it.rightEyeOpenProbability }
+                    val rightEyeProbabilities = eyeOpennessRecord.mapNotNull { it.rightEyeOpenProbability }
+                        .sorted()
+                    val headEulerAngleX = eulerRecord.mapNotNull { it.headEulerAngleX }
                         .sorted()
 
-                    if(leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty()){
+
+                    if(leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
                         Log.i("CameraViewModel", "No records found in the last 5 minutes")
                         return@launch
                     }
 
                     val medianLeftEye = calculateMedian(leftEyeProbabilities)
                     val medianRightEye = calculateMedian(rightEyeProbabilities)
+                    val medianEulerAngleX = calculateMedian(headEulerAngleX)
 
                     // Update LiveData with the calculated median values
                     _medianLeftEyeLiveData.postValue(medianLeftEye)
                     _medianRightEyeLiveData.postValue(medianRightEye)
+                    _medianEulerAngleXLiveData.postValue(medianEulerAngleX)
 
                     // Update LiveData with the number of records
-                    _recordCountLiveData.postValue(records.size)
+                    _recordCountLiveData.postValue(eyeOpennessRecord.size)
 
                     // Insert the stats into the database
                     val stats = StatsRecord(
                         timestamp = currentTime,
                         medianLeftEye = medianLeftEye,
                         medianRightEye = medianRightEye,
-                        recordCount = records.size,
+                        headEulerAngleX = medianEulerAngleX,
+                        recordCount = eyeOpennessRecord.size,
                         calculationTime = 123
                     )
                     statsDao.insert(stats)
@@ -105,7 +121,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             statsDao.getLastTwoStatsRecords()
                 .takeIf { it.size == 2 }
                 ?.let { (newStats, oldStats) ->
-                    if (newStats.medianLeftEye < oldStats.medianLeftEye *0.9|| newStats.medianRightEye < oldStats.medianRightEye*0.9) {
+                    if (newStats.medianLeftEye < oldStats.medianLeftEye *0.9 || newStats.medianRightEye < oldStats.medianRightEye*0.9 || newStats.headEulerAngleX < oldStats.headEulerAngleX*0.8) {
                         showNotification()
                     }
                 }
