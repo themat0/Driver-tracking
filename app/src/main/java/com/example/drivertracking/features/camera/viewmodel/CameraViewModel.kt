@@ -60,24 +60,28 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun calculateMedianForLast5Minutes() {
+    fun calculateMedianForChunk() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val calculationTime = measureTimeMillis {
                     val currentTime = System.currentTimeMillis()
-                    val fiveMinutesAgo = currentTime - (5 * 60 * 1000)
-                    val eyeOpennessRecord = eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
-                    val eulerRecord = eulerDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
+                    val fiveMinutesAgo = currentTime - (30 * 1000)
+                    val eyeOpennessRecord =
+                        eyeOpennessDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
+                    val eulerRecord =
+                        eulerDao.getRecordsBetweenTimestamps(fiveMinutesAgo, currentTime)
 
-                    val leftEyeProbabilities = eyeOpennessRecord.mapNotNull { it.leftEyeOpenProbability }
-                        .sorted()
-                    val rightEyeProbabilities = eyeOpennessRecord.mapNotNull { it.rightEyeOpenProbability }
-                        .sorted()
+                    val leftEyeProbabilities =
+                        eyeOpennessRecord.mapNotNull { it.leftEyeOpenProbability }
+                            .sorted()
+                    val rightEyeProbabilities =
+                        eyeOpennessRecord.mapNotNull { it.rightEyeOpenProbability }
+                            .sorted()
                     val headEulerAngleX = eulerRecord.mapNotNull { it.headEulerAngleX }
                         .sorted()
 
 
-                    if(leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
+                    if (leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
                         Log.i("CameraViewModel", "No records found in the last 5 minutes")
                         return@launch
                     }
@@ -116,16 +120,63 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun checkMedianForNotification(showNotification: () -> Unit){
+    fun checkMedianForNotification(showNotification: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
-            statsDao.getLastTwoStatsRecords()
-                .takeIf { it.size == 2 }
-                ?.let { (newStats, oldStats) ->
-                    if (newStats.medianLeftEye < oldStats.medianLeftEye *0.9 || newStats.medianRightEye < oldStats.medianRightEye*0.9 || newStats.headEulerAngleX < oldStats.headEulerAngleX*0.8) {
-                        showNotification()
+            statsDao.getLastFourStatsRecords()
+                .takeIf { it.size == 4 }
+                ?.let { stat ->
+                    stat.sortedBy { it.timestamp }.let { statsRecords ->
+                        val medianLeftEyeValues =
+                            statsRecords.map { it.medianLeftEye }.toFloatArray()
+                        val medianRightEyeValues =
+                            statsRecords.map { it.medianRightEye }.toFloatArray()
+                        val headEulerAngleXValues =
+                            statsRecords.map { it.headEulerAngleX }.toFloatArray()
+
+                        val movingAverageLeftEye = medianLeftEyeValues.toList()
+                            .windowed(size = 3, step = 1, partialWindows = true) { window ->
+                                window.average()
+                            }.toDoubleArray()
+                        val movingAverageRightEye = medianRightEyeValues.toList()
+                            .windowed(size = 3, step = 1, partialWindows = true) { window ->
+                                window.average()
+                            }.toDoubleArray()
+                        val movingAverageHeadEuler = headEulerAngleXValues.toList()
+                            .windowed(size = 3, step = 1, partialWindows = true) { window ->
+                                window.average()
+                            }.toDoubleArray()
+                        Log.i(
+                            "CameraViewModel",
+                            "Moving average left eye: ${movingAverageLeftEye.contentToString()}"
+                        )
+                        Log.i(
+                            "CameraViewModel",
+                            "Moving average right eye: ${movingAverageRightEye.contentToString()}"
+                        )
+                        Log.i(
+                            "CameraViewModel",
+                            "Moving average head euler: ${movingAverageHeadEuler.contentToString()}"
+                        )
+                        if (isDecreasing(movingAverageLeftEye) || isDecreasing(movingAverageRightEye) || isDecreasing(
+                                movingAverageHeadEuler
+                            )
+                        ) {
+                            showNotification()
+                        }
                     }
                 }
         }
+    }
+
+
+    // Funkcja sprawdzająca tendencję malejącą
+    private fun isDecreasing(array: DoubleArray): Boolean {
+        for (i in 1 until array.size) {
+            if (array[i] > array[i - 1]) {
+                return false
+            }
+        }
+        return true
     }
 
     private fun calculateMedian(list: List<Float>): Float {

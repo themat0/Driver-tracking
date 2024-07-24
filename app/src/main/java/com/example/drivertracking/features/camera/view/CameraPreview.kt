@@ -74,9 +74,9 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     }
     LaunchedEffect(Unit) {
         while (true) {
-            viewModel.calculateMedianForLast5Minutes()
+            viewModel.calculateMedianForChunk()
             viewModel.checkMedianForNotification(toastLink)
-            delay(1000 * 60 * 1) // every 1 minutes
+            delay(1000 * 30) // every 30 seconds
         }
     }
 
@@ -102,7 +102,7 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
 
     // Calculate median from records in the last 5 minutes
     val calculateMedian = {
-        viewModel.calculateMedianForLast5Minutes()
+        viewModel.calculateMedianForChunk()
     }
 
     // Observe median values from ViewModel
