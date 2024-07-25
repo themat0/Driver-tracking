@@ -1,21 +1,36 @@
 package com.example.drivertracking.features.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class SettingsViewModel : ViewModel() {
-    private val _frameRate = MutableStateFlow("")
-    val frameRate: StateFlow<String> = _frameRate
+    private val _maxFPS = MutableStateFlow(24)
+    val maxFPS: StateFlow<Int> get() = _maxFPS
 
-    private val _useFrontCamera = MutableStateFlow(false)
-    val useFrontCamera: StateFlow<Boolean> = _useFrontCamera
+    private val _fatigueDetectionSensitivity = MutableStateFlow(5)
+    val fatigueDetectionSensitivity: StateFlow<Int> get() = _fatigueDetectionSensitivity
 
-    fun setFrameRate(rate: String) {
-        _frameRate.value = rate
+    private val _isMaxFPSEnabled = MutableStateFlow(true)
+    val isMaxFPSEnabled: StateFlow<Boolean> get() = _isMaxFPSEnabled
+
+    fun setMaxFPS(value: Int) {
+        viewModelScope.launch {
+            _maxFPS.value = value
+        }
     }
 
-    fun setUseFrontCamera(useFront: Boolean) {
-        _useFrontCamera.value = useFront
+    fun setFatigueDetectionSensitivity(value: Int) {
+        viewModelScope.launch {
+            _fatigueDetectionSensitivity.value = value
+        }
+    }
+
+    fun setIsMaxFPSEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            _isMaxFPSEnabled.value = enabled
+        }
     }
 }
