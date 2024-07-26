@@ -2,35 +2,45 @@ package com.example.drivertracking.features.settings.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.example.drivertracking.utils.DataStoreManager
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class SettingsViewModel : ViewModel() {
-    private val _maxFPS = MutableStateFlow(24)
-    val maxFPS: StateFlow<Int> get() = _maxFPS
+class SettingsViewModel(private val dataStoreManager: DataStoreManager) : ViewModel() {
 
-    private val _fatigueDetectionSensitivity = MutableStateFlow(5)
-    val fatigueDetectionSensitivity: StateFlow<Int> get() = _fatigueDetectionSensitivity
+    val maxFPS: StateFlow<Int> = dataStoreManager.maxFPS.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = 24
+    )
 
-    private val _isMaxFPSEnabled = MutableStateFlow(true)
-    val isMaxFPSEnabled: StateFlow<Boolean> get() = _isMaxFPSEnabled
+    val fatigueDetectionSensitivity: StateFlow<Int> = dataStoreManager.sensitivity.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = 5
+    )
+
+    val isMaxFPSEnabled: StateFlow<Boolean> = dataStoreManager.isMaxFPSEnabled.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = true
+    )
 
     fun setMaxFPS(value: Int) {
         viewModelScope.launch {
-            _maxFPS.value = value
+            dataStoreManager.setMaxFPS(value)
         }
     }
 
     fun setFatigueDetectionSensitivity(value: Int) {
         viewModelScope.launch {
-            _fatigueDetectionSensitivity.value = value
+            dataStoreManager.setSensitivity(value)
         }
     }
 
     fun setIsMaxFPSEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            _isMaxFPSEnabled.value = enabled
+            dataStoreManager.setIsMaxFPSEnabled(enabled)
         }
     }
 }

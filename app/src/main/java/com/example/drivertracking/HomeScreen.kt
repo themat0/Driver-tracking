@@ -12,14 +12,7 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -31,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.drivertracking.ui.theme.Purple80
+import com.example.drivertracking.features.settings.viewmodel.SettingsViewModel
 
 enum class DriverScreen(@StringRes val title: Int) {
     Start(title = R.string.app_name),
@@ -71,6 +65,7 @@ fun DriverAppBar(
 
 @Composable
 fun DriverApp(
+    settingsViewModel: SettingsViewModel,
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -121,15 +116,13 @@ fun DriverApp(
                 }
             }
             composable(route = DriverScreen.Settings.name) {
-                SettingsScreen()
+                SettingsScreen(settingsViewModel = settingsViewModel)
             }
             composable(route = DriverScreen.Camera.name) {
                 CameraPreview()
             }
             composable(route = DriverScreen.Logs.name) {
                 LogsScreen()
-//                Text(text = "Logs")
-//                val context = LocalContext.current
             }
         }
     }

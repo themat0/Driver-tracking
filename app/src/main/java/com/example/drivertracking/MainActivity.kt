@@ -6,50 +6,27 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.drivertracking.features.camera.viewmodel.CameraViewModel
-import com.example.drivertracking.model.entities.EyeOpennessRecord
+import com.example.drivertracking.features.settings.viewmodel.SettingsViewModel
+import com.example.drivertracking.features.settings.viewmodel.SettingsViewModelFactory
 import com.example.drivertracking.ui.theme.DriverTrackingTheme
+import com.example.drivertracking.utils.DataStoreManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dataStoreManager = DataStoreManager(applicationContext)
+
         setContent {
             DriverTrackingTheme {
-                DriverApp()
+                // Create the SettingsViewModel with the factory
+                val settingsViewModel: SettingsViewModel = viewModel(
+                    factory = SettingsViewModelFactory(dataStoreManager)
+                )
+
+                // Display the main application with settings screen
+                DriverApp(settingsViewModel)
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MainScreen() {
-    val viewModel: CameraViewModel = viewModel()
-    val records by viewModel.allRecords.observeAsState(emptyList())
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Driver Tracking") }
-            )
-        },
-        content = { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Displaying the records from the database
-                records.forEach { record ->
-                    Text("Timestamp: ${record.timestamp}, Left Eye: ${record.leftEyeOpenProbability}, Right Eye: ${record.rightEyeOpenProbability}")
-                }
-            }
-        }
-    )
 }
