@@ -9,11 +9,17 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,8 +29,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -59,6 +67,8 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var medianHeadEulerAngleX by remember { mutableStateOf<Float?>(null) }
     var recordCount by remember { mutableStateOf<Int?>(null) }
     var calculationTime by remember { mutableStateOf<Long?>(null) }
+    var allValuesNotNull =
+        leftEyeOpenProbability != null && rightEyeOpenProbability != null && headEulerAngleX != null
 
     val toastLink = {
         (context as Activity).runOnUiThread {
@@ -79,8 +89,6 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
             delay(1000 * 30) // every 30 seconds
         }
     }
-
-
 
 
     // Save to database when button is clicked
@@ -155,70 +163,25 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     // Switch Button and other UI elements
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter
+        contentAlignment = Alignment.TopEnd,
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { useFrontCamera = !useFrontCamera }) {
-                Text(text = "Switch Camera")
-            }
-            Button(onClick = { calculateMedian() }) {
-                Text(text = "Calculate Median")
-            }
-            Text(text = "Frame Rate: $frameRate fps")
-            Text(text = "Image Size: $imageSize")
-            leftEyeOpenProbability?.let { probability ->
-                Text(
-                    text = "Left Eye Open Probability: ${
-                        String.format(
-                            "%.2f",
-                            probability * 100
-                        )
-                    }%"
+        Icon(
+            Icons.Filled.Person,
+            contentDescription = "Person",
+            modifier = Modifier
+                .size(64.dp)
+                .padding(all = 10.dp)
+                .border(
+                    width = 2.dp,
+                    color = Color.White,
+                    shape = RoundedCornerShape(5.dp)
                 )
-            }
-            rightEyeOpenProbability?.let { probability ->
-                Text(
-                    text = "Right Eye Open Probability: ${
-                        String.format(
-                            "%.2f",
-                            probability * 100
-                        )
-                    }%"
-                )
-            }
-            medianLeftEye?.let { median ->
-                Text(
-                    text = "Median Left Eye Open Probability: ${
-                        String.format(
-                            "%.2f",
-                            median * 100
-                        )
-                    }%"
-                )
-            }
-            medianRightEye?.let { median ->
-                Text(
-                    text = "Median Right Eye Open Probability: ${
-                        String.format(
-                            "%.2f",
-                            median * 100
-                        )
-                    }%"
-                )
-            }
-            medianHeadEulerAngleX?.let { median ->
-                Text(text = "Median Head Euler Angle X: ${String.format("%.2f", median)}")
-            }
-            recordCount?.let { count ->
-                Text(text = "Records Count: $count")
-            }
-            calculationTime?.let { time ->
-                Text(text = "Calculation Time: $time ms")
-            }
-        }
+                .padding(all = 2.dp)
+                .background(color = Color.White),
+            tint = if (allValuesNotNull) Color.Green else Color.Red
+        )
     }
 }
-
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -242,7 +205,6 @@ fun CameraPreviewContent(
 ) {
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val previewView = remember { PreviewView(context) }
-    val faceGridView = remember { FaceGridView(context) }
     var cameraExecutor: ExecutorService? by remember { mutableStateOf(null) }
 
     DisposableEffect(Unit) {
@@ -278,7 +240,6 @@ fun CameraPreviewContent(
                         processImageProxy(
                             faceDetector,
                             imageProxy,
-                            faceGridView,
                             onFrameRateUpdated,
                             onImageSizeUpdated,
                             onLeftEyeOpenProbabilityUpdated,
@@ -304,7 +265,6 @@ fun CameraPreviewContent(
 
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView({ previewView }, modifier = Modifier.fillMaxSize())
-            AndroidView({ faceGridView }, modifier = Modifier.fillMaxSize())
         }
     } else {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -316,7 +276,6 @@ fun CameraPreviewContent(
 private fun processImageProxy(
     faceDetector: com.google.mlkit.vision.face.FaceDetector,
     imageProxy: ImageProxy,
-    faceGridView: FaceGridView,
     onFrameRateUpdated: (Int) -> Unit,
     onImageSizeUpdated: (String) -> Unit,
     onLeftEyeOpenProbabilityUpdated: (Float?) -> Unit,
@@ -332,13 +291,11 @@ private fun processImageProxy(
             .addOnSuccessListener { faces ->
                 if (faces.isNotEmpty()) {
                     val face = faces[0]
-                    faceGridView.setFace(face)
                     onHeadEulerAngleXUpdated(face.headEulerAngleX)
                     onLeftEyeOpenProbabilityUpdated(face.leftEyeOpenProbability)
                     onRightEyeOpenProbabilityUpdated(face.rightEyeOpenProbability)
                     onSaveToDatabase()
                 } else {
-                    faceGridView.setFace(null)
                     onHeadEulerAngleXUpdated(null)
                     onLeftEyeOpenProbabilityUpdated(null)
                     onRightEyeOpenProbabilityUpdated(null)
