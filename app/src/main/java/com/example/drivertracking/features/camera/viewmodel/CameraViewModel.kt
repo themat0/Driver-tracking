@@ -8,9 +8,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.drivertracking.DriverTrackingApplication
 import com.example.drivertracking.model.dao.EulerDao
+import com.example.drivertracking.model.dao.EventDao
 import com.example.drivertracking.model.dao.EyeOpennessDao
 import com.example.drivertracking.model.dao.StatsDao
 import com.example.drivertracking.model.entities.EulerRecord
+import com.example.drivertracking.model.entities.EventRecord
 import com.example.drivertracking.model.entities.EyeOpennessRecord
 import com.example.drivertracking.model.entities.StatsRecord
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +44,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val eyeOpennessDao: EyeOpennessDao = DriverTrackingApplication.database.eyeOpennessDao()
     private val eulerDao: EulerDao = DriverTrackingApplication.database.eulerDao()
     private val statsDao: StatsDao = DriverTrackingApplication.database.statsDao()
+    private val eventDao: EventDao = DriverTrackingApplication.database.eventDao()
     val allRecords: LiveData<List<EyeOpennessRecord>> = eyeOpennessDao.getAllRecords()
 
     fun insert(eyeOpennessRecord: EyeOpennessRecord, eulerRecord: EulerRecord) {
@@ -161,6 +164,17 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                                 movingAverageHeadEuler
                             )
                         ) {
+                            var decreasing = ""
+                            if (isDecreasing(movingAverageLeftEye)){
+                                decreasing += "Obniżenie otwarcia lewego oka\n"
+                            }
+                            if (isDecreasing(movingAverageRightEye)){
+                                decreasing += "Obniżenie otwarcia prawgo oka\n"
+                            }
+                            if (isDecreasing(movingAverageHeadEuler)){
+                                decreasing += "Obniżenie twarzy użytkownika\n"
+                            }
+                            eventDao.insert(EventRecord( timestamp = System.currentTimeMillis(), description = "Wykryto stałe obniżenie parametrów użytkownika:\n$decreasing"))
                             showNotification()
                         }
                     }

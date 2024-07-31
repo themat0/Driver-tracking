@@ -75,5 +75,9 @@ fun SettingsScreen(settingsViewModel: SettingsViewModel = viewModel()) {
             )
             Text("${sensitivityState.toInt()}")
         }
+
+        Button(onClick = { settingsViewModel.clearEventDatabase() }) {
+            Text("Delete events from database")
+        }
     }
 }
