@@ -1,6 +1,7 @@
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.media.MediaPlayer
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.drivertracking.R
 import com.example.drivertracking.features.camera.viewmodel.CameraViewModel
 import com.example.drivertracking.model.entities.EulerRecord
 import com.example.drivertracking.model.entities.EyeOpennessRecord
@@ -73,6 +75,11 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     val toastLink = {
         (context as Activity).runOnUiThread {
             Toast.makeText(context, "Uwaga! Zdarzenie zarejestrowane", Toast.LENGTH_LONG).show()
+
+            // Play notification sound
+            val mediaPlayer = MediaPlayer.create(context, R.raw.notification_sound)
+            mediaPlayer.start()
+            mediaPlayer.setOnCompletionListener { it.release() }
         }
     }
 
