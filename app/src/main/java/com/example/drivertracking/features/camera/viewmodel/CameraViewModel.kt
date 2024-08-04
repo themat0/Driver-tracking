@@ -60,6 +60,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) {
             eyeOpennessDao.deleteOldRecords(timestamp)
             eulerDao.deleteOldRecords(timestamp)
+            statsDao.deleteOldRecords(timestamp)
         }
     }
 
@@ -82,35 +83,11 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                             .sorted()
                     val headEulerAngleX = eulerRecord.mapNotNull { it.headEulerAngleX }
                         .sorted()
-
-
-                    if (leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
+                   if (leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
                         Log.i("CameraViewModel", "No records found in the last 5 minutes")
                         return@launch
                     }
 
-                    val medianLeftEye = calculateMedian(leftEyeProbabilities)
-                    val medianRightEye = calculateMedian(rightEyeProbabilities)
-                    val medianEulerAngleX = calculateMedian(headEulerAngleX)
-
-                    // Update LiveData with the calculated median values
-                    _medianLeftEyeLiveData.postValue(medianLeftEye)
-                    _medianRightEyeLiveData.postValue(medianRightEye)
-                    _medianEulerAngleXLiveData.postValue(medianEulerAngleX)
-
-                    // Update LiveData with the number of records
-                    _recordCountLiveData.postValue(eyeOpennessRecord.size)
-
-                    // Insert the stats into the database
-                    val stats = StatsRecord(
-                        timestamp = currentTime,
-                        medianLeftEye = medianLeftEye,
-                        medianRightEye = medianRightEye,
-                        headEulerAngleX = medianEulerAngleX,
-                        recordCount = eyeOpennessRecord.size,
-                        calculationTime = 123
-                    )
-                    statsDao.insert(stats)
                 }
 
                 // Update LiveData with the time taken for the calculation

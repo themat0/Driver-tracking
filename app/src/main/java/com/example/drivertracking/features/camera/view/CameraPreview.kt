@@ -91,9 +91,9 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     }
     LaunchedEffect(Unit) {
         while (true) {
+            delay(1000 * 30) // every 30 seconds
             viewModel.calculateMedianForChunk()
             viewModel.checkMedianForNotification(toastLink)
-            delay(1000 * 30) // every 30 seconds
         }
     }
 

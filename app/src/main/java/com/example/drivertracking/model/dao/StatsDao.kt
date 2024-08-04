@@ -18,4 +18,7 @@ interface StatsDao {
     fun getLastStatsRecord(): StatsRecord?
     @Query("SELECT * FROM stats ORDER BY timestamp DESC LIMIT 4")
     fun getLastFourStatsRecords(): List<StatsRecord>
+    //Delete old record from database
+    @Query("DELETE FROM stats WHERE timestamp < :timestamp")
+    fun deleteOldRecords(timestamp: Long)
 }
