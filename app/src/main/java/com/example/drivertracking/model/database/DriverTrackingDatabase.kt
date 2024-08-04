@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.drivertracking.model.dao.EulerDao
 import com.example.drivertracking.model.dao.EventDao
 import com.example.drivertracking.model.dao.EyeOpennessDao
