@@ -83,11 +83,32 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                             .sorted()
                     val headEulerAngleX = eulerRecord.mapNotNull { it.headEulerAngleX }
                         .sorted()
-                   if (leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
+                    if (leftEyeProbabilities.isEmpty() || rightEyeProbabilities.isEmpty() || headEulerAngleX.isEmpty()) {
                         Log.i("CameraViewModel", "No records found in the last 5 minutes")
                         return@launch
                     }
+                    val medianLeftEye = calculateMedian(leftEyeProbabilities)
+                    val medianRightEye = calculateMedian(rightEyeProbabilities)
+                    val medianEulerAngleX = calculateMedian(headEulerAngleX)
 
+                    // Update LiveData with the calculated median values
+                    _medianLeftEyeLiveData.postValue(medianLeftEye)
+                    _medianRightEyeLiveData.postValue(medianRightEye)
+                    _medianEulerAngleXLiveData.postValue(medianEulerAngleX)
+
+                    // Update LiveData with the number of records
+                    _recordCountLiveData.postValue(eyeOpennessRecord.size)
+
+                    // Insert the stats into the database
+                    val stats = StatsRecord(
+                        timestamp = currentTime,
+                        medianLeftEye = medianLeftEye,
+                        medianRightEye = medianRightEye,
+                        headEulerAngleX = medianEulerAngleX,
+                        recordCount = eyeOpennessRecord.size,
+                        calculationTime = 123
+                    )
+                    statsDao.insert(stats)
                 }
 
                 // Update LiveData with the time taken for the calculation
@@ -96,12 +117,14 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) {
                 Log.e("CameraViewModel", "Error calculating median", e)
                 // Handle error as needed
+
             }
         }
     }
 
     fun checkMedianForNotification(showNotification: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
+            Log.d("CameraViewModel", "Checking median for notification")
             statsDao.getLastFourStatsRecords()
                 .takeIf { it.size == 4 }
                 ?.let { stat ->
@@ -126,15 +149,15 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
                                 window.average()
                             }.toDoubleArray()
                         Log.i(
-                            "CameraViewModel",
+                            "CameraViewModel - Moving average",
                             "Moving average left eye: ${movingAverageLeftEye.contentToString()}"
                         )
                         Log.i(
-                            "CameraViewModel",
+                            "CameraViewModel - Moving average",
                             "Moving average right eye: ${movingAverageRightEye.contentToString()}"
                         )
                         Log.i(
-                            "CameraViewModel",
+                            "CameraViewModel - Moving average",
                             "Moving average head euler: ${movingAverageHeadEuler.contentToString()}"
                         )
                         if (isDecreasing(movingAverageLeftEye) || isDecreasing(movingAverageRightEye) || isDecreasing(
