@@ -58,7 +58,7 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
-    var useFrontCamera by remember { mutableStateOf(true) }
+    val useFrontCamera by remember { mutableStateOf(true) }
     var frameRate by remember { mutableStateOf(0) }
     var imageSize by remember { mutableStateOf("") }
     var leftEyeOpenProbability by remember { mutableStateOf<Float?>(null) }
@@ -69,9 +69,10 @@ fun CameraPreview(viewModel: CameraViewModel = viewModel()) {
     var medianHeadEulerAngleX by remember { mutableStateOf<Float?>(null) }
     var recordCount by remember { mutableStateOf<Int?>(null) }
     var calculationTime by remember { mutableStateOf<Long?>(null) }
-    var allValuesNotNull =
+    val allValuesNotNull =
         leftEyeOpenProbability != null && rightEyeOpenProbability != null && headEulerAngleX != null
 
+    // here we loop checking for alert and reacting then
     val toastLink = {
         (context as Activity).runOnUiThread {
             Toast.makeText(context, "Uwaga! Zdarzenie zarejestrowane", Toast.LENGTH_LONG).show()
